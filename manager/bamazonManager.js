@@ -67,7 +67,7 @@ function lowStock() {
 
   connection.query("SELECT*FROM product WHERE `stock_quantity`<=5", function(err, res) {
     if (err) throw err;
-    if (res) {
+    if (res[0]!="") {
       console.log("\n");
       console.log("ALERT! THERE IS ITEM WITH LOW INVENTORY")
       for (var i = 0; i < res.length; i++) {
@@ -76,6 +76,8 @@ function lowStock() {
         lowStockItem.name.push(res[i].product_name);
       }
       console.log("\n");
+    }else{
+      console.log("THERE IS NO ITEM WITH LOW INVENTORY")
     }
     return welcome();
   })
@@ -124,7 +126,7 @@ function addNew() {
       type: "input",
       message: "ENTER UNIT PRICE FOR THE NEW ITEM"
     }).then(function(answer) {
-      if (answer.price % 1 != 0) {
+      if (answer.price*100 % 1 != 0) {
         console.log("Please enter numerical value");
         return third();
       } else if (answer.price == 0) {
