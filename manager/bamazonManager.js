@@ -199,7 +199,7 @@ function addNew() {
           addID = answer.itemID;
           connection.query("SELECT stock_quantity FROM product WHERE ?",{item_id:answer.itemID}, function(err, res){
             if (err) throw err;
-            
+
             return quantity(res[0].stock_quantity);
           })
         }
@@ -216,7 +216,7 @@ function addNew() {
           console.log("Please enter numerical value and not Zero");
           return quantity();
         } else {
-          addmany = answer.quantity+parseInt(stock);
+          addmany = parseInt(answer.quantity)+parseInt(stock);
           return final();
         }
       });
