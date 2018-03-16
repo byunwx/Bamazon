@@ -18,7 +18,8 @@ connection.connect(function(err) {
 });
 var lowStockItem = {
   id: [],
-  name: []
+  name: [],
+  quantity: []
 }
 
 function welcome() {
@@ -35,6 +36,7 @@ function welcome() {
         break;
       case "View Low Inventory":
         lowStock();
+        setTimeout(welcome, 1000);
         break;
       case "Add to Inventory":
         addInventory();
@@ -67,19 +69,23 @@ function lowStock() {
 
   connection.query("SELECT*FROM product WHERE `stock_quantity`<=5", function(err, res) {
     if (err) throw err;
-    if (res[0]!="") {
+    if (res.length>0) {
       console.log("\n");
       console.log("ALERT! THERE IS ITEM WITH LOW INVENTORY")
       for (var i = 0; i < res.length; i++) {
         console.log("ID: " + res[i].item_id + " || Product: " + res[i].product_name + " || Department: " + res[i].department_name + " || Price:" + res[i].price + " || Quantity: " + res[i].stock_quantity);
         lowStockItem.id.push(res[i].item_id);
         lowStockItem.name.push(res[i].product_name);
+        lowStockItem.quantity.push(res[i].stock_quantity);
       }
       console.log("\n");
-    }else{
-      console.log("THERE IS NO ITEM WITH LOW INVENTORY")
     }
-    return welcome();
+    else{
+      console.log("\n");
+      console.log("THERE NO ITEM WITH LOW INVENTORY");
+      console.log("\n");
+    }
+    return
   })
 }
 
@@ -97,10 +103,12 @@ function addNew() {
     }).then(function(answer) {
       connection.query("SELECT product_name FROM product", function(err, res) {
         if (err) throw err;
-        if (res.indexOf(answer.name) < 0) {
+        if (res.indexOf(answer.name) < 0 &&answer.name!="") {
           nameItem = answer.name;
           return second();
-        } else {
+        } else if (answer.name=="") {
+          return welcome();
+        } else{
           console.log("THIS ITEM IS ALREADY IN THE SYSTEM");
           return welcome();
         }
@@ -182,17 +190,23 @@ function addNew() {
         if (answer.itemID % 1 != 0) {
           console.log("Please enter numerical value");
           return itemID();
-        } else if (lowStockItem.id.indexOf(parseInt(answer.itemID)) < 0) {
-          console.log("ITEM NOT EXISTS");
+        } else if (answer.itemID==0) {
+          return welcome();
+        }else if (lowStockItem.id.indexOf(parseInt(answer.itemID)) < 0) {
+          console.log("ITEM NOT EXISTS or NOT LOW INVENTORY");
           return itemID();
         } else {
           addID = answer.itemID;
-          return quantity();
+          connection.query("SELECT stock_quantity FROM product WHERE ?",{item_id:answer.itemID}, function(err, res){
+            if (err) throw err;
+            
+            return quantity(res[0].stock_quantity);
+          })
         }
       })
     }
 
-    function quantity() {
+    function quantity(stock) {
       inquirer.prompt({
         name: "quantity",
         type: "input",
@@ -202,22 +216,25 @@ function addNew() {
           console.log("Please enter numerical value and not Zero");
           return quantity();
         } else {
-          addmany = answer.quantity;
+          addmany = answer.quantity+parseInt(stock);
           return final();
         }
       });
     }
 
     function final() {
+
       connection.query("UPDATE product SET ? WHERE ?", [{
         stock_quantity: addmany
       }, {
         item_id: addID
       }], function(err, res) {
         console.log(res.affectedRows + " products updated!\n");
-        return welcome();
+        lowStock();
+        return setTimeout(welcome, 1000);
       })
     }
     itemID();
   }
   lowStock();
+  setTimeout(welcome, 1000);
